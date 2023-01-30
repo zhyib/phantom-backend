@@ -1,4 +1,17 @@
 <template>
+  <TableTool>
+    <template #left>
+      <el-form style="display: flex">
+        <el-form-item label="Title">
+          <el-input v-model="pageData.searchTitle" @keyup.enter="handleClickSearch"></el-input>
+        </el-form-item>
+        <el-button @click="handleClickSearch">Search</el-button>
+      </el-form>
+    </template>
+    <template #right>
+      <el-button @click="handleClickSearch">Add</el-button>
+    </template>
+  </TableTool>
   <el-table
     :data="pageData.tableData">
     <el-table-column prop="gameId" label="gameId" />
@@ -17,7 +30,7 @@
           text
           bg
           @click="handleClickEdit(scope.row.gameId)">
-          编辑
+          Edit
         </el-button>
       </template>
     </el-table-column>
@@ -88,10 +101,13 @@
   </el-dialog>
 </template>
 <script lang="ts" setup>
-import axiosUtil from '@/utils/axiosUtil';
 import { onMounted, reactive } from 'vue';
-import Game from '@/model/Game';
 import { ElMessage } from 'element-plus';
+
+import axiosUtil from '@/utils/axiosUtil';
+
+import Game from '@/model/Game';
+import TableTool from '@/components/TaleTool.vue';
 
 interface GameTableData extends Game {
   completed?: string,
@@ -103,22 +119,22 @@ const pageData = reactive<{
   // data editing
   editData: Game,
   // edit dialog
-  dialogVisible: boolean
+  dialogVisible: boolean,
+  // search param
+  searchTitle: string,
 }>({
   tableData: [],
   editData: new Game(),
   dialogVisible: false,
+  searchTitle: '',
 });
 
 /**
  * queryTable
+ * @param param 参数列表 默认 {}
  */
-function queryTable() {
-  axiosUtil.get<unknown, Game[]>('/queryGameInfoByTitle', {
-    params: {
-      title: '',
-    },
-  })
+function queryTable(param: Record<string, string> = {}) {
+  axiosUtil.post<unknown, Game[]>('/queryGameInfo', param)
     .then((data) => {
       const dataArr: GameTableData[] = [];
       data.forEach((game: Game) => {
@@ -139,14 +155,19 @@ function queryTable() {
     });
 }
 
+function handleClickSearch() {
+  queryTable({
+    titleCn: pageData.searchTitle,
+    titleEn: pageData.searchTitle,
+  });
+}
+
 /**
  * edit dialog
  */
 function handleClickEdit(gameId: number) {
-  axiosUtil.get<unknown, Game[]>('/queryGameInfoById', {
-    params: {
-      id: gameId,
-    },
+  axiosUtil.post<unknown, Game[]>('/queryGameInfo', {
+    gameId,
   })
     .then((data) => {
       pageData.editData = new Game(data[0]);
