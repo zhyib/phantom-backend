@@ -9,7 +9,7 @@
       </el-form>
     </template>
     <template #right>
-      <el-button @click="handleClickSearch">Add</el-button>
+      <el-button @click="handleClickAdd">Add</el-button>
     </template>
   </TableTool>
   <el-table
@@ -20,7 +20,7 @@
     <el-table-column prop="rate" label="rate" />
     <el-table-column prop="completed" label="completed">
       <template #default="scope">
-        {{ scope.row.completed }}
+        {{ isCompleted(scope.row.completed) }}
       </template>
     </el-table-column>
     <el-table-column prop="isDeleted" label="isDeleted" />
@@ -108,6 +108,7 @@ import axiosUtil from '@/utils/axiosUtil';
 
 import Game from '@/model/Game';
 import TableTool from '@/components/TaleTool.vue';
+import { fa } from 'element-plus/es/locale';
 
 interface GameTableData extends Game {
   completed?: string,
@@ -122,12 +123,24 @@ const pageData = reactive<{
   dialogVisible: boolean,
   // search param
   searchTitle: string,
+  // edit mode
+  isEdit: boolean,
 }>({
   tableData: [],
   editData: new Game(),
   dialogVisible: false,
   searchTitle: '',
+  isEdit: false,
 });
+
+/**
+ *
+ * @param completed Game.isCompleted
+ */
+function isCompleted(completed: string) {
+  const arr = completed.split('/');
+  return arr[0] === arr[1] ? 'Finished' : completed;
+}
 
 /**
  * queryTable
@@ -166,6 +179,7 @@ function handleClickSearch() {
  * edit dialog
  */
 function handleClickEdit(gameId: number) {
+  pageData.isEdit = true;
   axiosUtil.post<unknown, Game[]>('/queryGameInfo', {
     gameId,
   })
@@ -175,13 +189,34 @@ function handleClickEdit(gameId: number) {
     });
 }
 
+/**
+ * add dialog
+ */
+function handleClickAdd() {
+  pageData.isEdit = false;
+  pageData.editData = new Game();
+  pageData.dialogVisible = true;
+}
+
+/**
+ * dialog's confirm
+ */
 function handleClickConfirm() {
-  axiosUtil.post('/updateGameInfoById', pageData.editData)
-    .then(() => {
-      ElMessage.success('成功');
-      pageData.dialogVisible = false;
-      queryTable();
-    });
+  if (pageData.isEdit) {
+    axiosUtil.post('/updateGameInfo', pageData.editData)
+      .then(() => {
+        ElMessage.success('成功');
+        pageData.dialogVisible = false;
+        queryTable();
+      });
+  } else {
+    axiosUtil.post('/createGameInfo', pageData.editData)
+      .then(() => {
+        ElMessage.success('成功');
+        pageData.dialogVisible = false;
+        queryTable();
+      });
+  }
 }
 
 onMounted(() => {
