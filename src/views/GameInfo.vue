@@ -169,10 +169,11 @@ function queryTable(param: Record<string, string> = {}) {
 }
 
 function handleClickSearch() {
-  queryTable({
-    titleCn: pageData.searchTitle,
-    titleEn: pageData.searchTitle,
-  });
+  if (pageData.searchTitle.match(/^\w*$/)) {
+    queryTable({ titleEn: pageData.searchTitle });
+  } else {
+    queryTable({ titleCn: pageData.searchTitle });
+  }
 }
 
 /**
